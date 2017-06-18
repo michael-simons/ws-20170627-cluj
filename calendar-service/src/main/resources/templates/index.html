@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      th:lang="${#locale.language}">
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <link rel="stylesheet" href="" th:href="@{/webjars/fullcalendar/dist/fullcalendar.css}" />
+        <script th:src="@{/webjars/jquery/dist/jquery.min.js}"></script>
+        <script th:src="@{/webjars/moment/min/moment-with-locales.min.js}"></script>
+        <script th:src="@{/webjars/fullcalendar/dist/fullcalendar.min.js}"></script>
+
+        <script>
+            $(document).ready(function () {
+                $("#calendar").fullCalendar({
+                    header: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'month,basicWeek,basicDay'
+                    },
+                    defaultDate: moment(),
+                    navLinks: true,
+                    editable: true,
+                    eventLimit: true
+                });
+            });
+        </script>
+        <style>
+            body {
+                margin: 40px 10px;
+                padding: 0;
+                font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+                font-size: 14px;
+            }
+            #calendar {
+                max-width: 900px;
+                margin: 0 auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="calendar"></div>
+    </body>
+</html>
