@@ -12,7 +12,13 @@
         <script th:src="@{/webjars/moment/min/moment-with-locales.min.js}"></script>
         <script th:src="@{/webjars/fullcalendar/dist/fullcalendar.min.js}"></script>
 
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+            var eventSource = /*[[${events}]]*/ null;
+        /*]]>*/
+        </script>
         <script>
+            /*<![CDATA[*/
             $(document).ready(function () {
                 $("#calendar").fullCalendar({
                     header: {
@@ -23,9 +29,23 @@
                     defaultDate: moment(),
                     navLinks: true,
                     editable: true,
-                    eventLimit: true
+                    eventLimit: true,
+                    events: function(start, end, timezone, callback) {
+                         var events = [];
+                         for (var i = 0; i < eventSource.length; i++) {
+                            var event = {
+                                title: eventSource[i].name,
+                                start: moment(eventSource[i].heldOn)
+                            };
+                            if(start.isSameOrBefore(event.start) && end.isSameOrAfter(event.start)) {
+                                events.push(event);
+                            }
+                         }
+                         callback(events);
+                    }
                 });
             });
+            /*]]>*/
         </script>
         <style>
             body {
@@ -41,6 +61,7 @@
         </style>
     </head>
     <body>
+        
         <div id="calendar"></div>
     </body>
 </html>
