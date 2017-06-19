@@ -6,17 +6,20 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import static java.time.OffsetTime.now;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @WebMvcTest
@@ -30,17 +33,20 @@ public class EventApiTest {
 
     @Test
     public void getEventsShouldWork() throws Exception {
-        ZonedDateTime now = ZonedDateTime.now();
+        final ZonedDateTime now = ZonedDateTime.now();
         List<EventEntity> expectedEvents
                 = Arrays.asList(
                         new EventEntity(GregorianCalendar.from(now.plusDays(3)), "test1"),
                         new EventEntity(GregorianCalendar.from(now.plusWeeks(1)), "test2")
                 );
-        Mockito.when(eventService.allEvents()).thenReturn(expectedEvents);
+        when(eventService.allEvents()).thenReturn(expectedEvents);
 
         this.mvc
-                .perform(MockMvcRequestBuilders.get("/api/events"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name", equalTo("test1")));
+                .perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name", is(equalTo("test1"))));
+        
+        verify(this.eventService).allEvents();
+        verifyNoMoreInteractions(this.eventService);
     }
 }
