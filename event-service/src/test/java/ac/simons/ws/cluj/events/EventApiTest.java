@@ -79,4 +79,14 @@ public class EventApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().json(objectMapper.writeValueAsString(expectedEntity)));
     }
+    
+    @Test
+    public void shouldHandleOnlyValidInput() throws Exception {
+        this.mvc
+                .perform(
+                        post("/api/events").contentType(MediaType.APPLICATION_JSON_UTF8)
+                                .content("{}")
+                )
+                .andExpect(status().isBadRequest());
+    }
 }
