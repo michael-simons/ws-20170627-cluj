@@ -5,4 +5,6 @@ import org.springframework.data.repository.Repository;
 
 public interface EventRepository extends Repository<EventEntity, Integer> {
     List<EventEntity> findAllByOrderByHeldOnAsc();
+
+    EventEntity save(EventEntity entity);
 }
