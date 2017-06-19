@@ -1,14 +1,21 @@
 package ac.simons.ws.cluj.events;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/events")
 public class EventApi {
-    @GetMapping("/api/events")
+    private final EventService eventService;
+
+    public EventApi(EventService eventService) {
+        this.eventService = eventService;
+    }
+    
+    @GetMapping
     public List<EventEntity> getEvents() {
-        return new ArrayList<>();
+        return this.eventService.allEvents();
     }
 }
