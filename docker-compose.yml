@@ -1,0 +1,37 @@
+version: '2'
+
+services:
+  calendar-service:
+    image: msimons/ws-cluj-calendar-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-registry
+      - event-service
+    environment:
+      - server.port=8080
+      - eureka.client.serviceUrl.defaultZone=http://service-registry:8761/eureka/
+
+  event-service:
+    image: msimons/ws-cluj-event-service
+    depends_on:
+      - service-registry
+      - database
+    environment:
+      - server.port=8080
+      - spring.profiles.active=prod
+      - spring.datasource.url=jdbc:postgresql://database:5432/events-db
+      - eureka.client.serviceUrl.defaultZone=http://service-registry:8761/eureka/
+    expose:
+      - "8080"
+
+  service-registry:
+    image: msimons/ws-cluj-service-registry
+    expose:
+     - "8761"
+
+  database:
+      image: postgres:9.6
+      environment:
+          - POSTGRES_USER=events-db
+          - POSTGRESS_PASSWORD=events-db
