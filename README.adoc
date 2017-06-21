@@ -37,6 +37,8 @@ As Spring Boot Project is a plain Gradle or Maven Project in the end, all three 
 
 If you want to try out the microservice examples in Docker, you'll need a recent Docker installation on your machine, too.
 
+WARNING: If you don't have docker installed, the projects won't build after commit #445fcec. I have tagged the latest version that works without docker for you, so you can check it out with `git checkout no-docker`.
+
 ==== Downloads
 
 * http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html[Oracle JDK], please choose your operating system
