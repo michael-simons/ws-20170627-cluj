@@ -509,8 +509,8 @@ That first approach uses an instance of `MockMvc` provided by `@WebMvcTest` to c
 
 .Fix the failing test
 ====
-----
 [source,java]
+----
 @GetMapping("/api/events")
 public List<EventEntity> getEvents() {
     return new ArrayList<>();
