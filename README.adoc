@@ -93,7 +93,7 @@ You can write the build file by hand or you just can go to https://start.spring.
 
 *Steps*
 
-1. Goto https://start.spring.io, chose wether you want to use Maven or Gradle, the language (in this workshop we'll use Java) and the version of Spring Boot (leave as is).
+1. Go to https://start.spring.io, chose wether you want to use Maven or Gradle, the language (in this workshop we'll use Java) and the version of Spring Boot (leave as is).
 2. Enter "Web" inside dependencies textbox and select "Web"
 3. Repeat last steps with the technologies you'll find interesting
 4. Hit generate
@@ -318,7 +318,7 @@ At the moment, there's only one class, the application class. The package is bas
 
 There are two caveats: 
 
-* Don't annotate a class in the root package with `@SproingBootApplication` or `@ComponentScan`. It will scan the whole class path!
+* Don't annotate a class in the root package with `@SpringBootApplication` or `@ComponentScan`. It will scan the whole class path!
 * Those annotation won't scan packages in parallel to their current package
 
 How about the configuration in starter than? Does Spring actually run a full classpath package scan? No: It uses the `spring.factories` services locator implementation!
@@ -368,7 +368,7 @@ This is a not a compile time but a runtime dependency that has several neat feat
 * It automatically reloads changed resources
 * Changes some settings during development, for example disables caching for messages, templates and so on
 
-It's not as elaborate like JRebel, but a valuable nevertheless!
+It’s not as elaborate like JRebel, but, nevertheless, valuable!
 
 === Spring Boot Starter JPA
 
