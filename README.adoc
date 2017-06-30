@@ -913,3 +913,250 @@ management.security.enabled = false
 management.context-path = /application
 ----
 ====
+
+== Microservice Scenario
+
+The sources contain one microservice scenario which makes use of two projects from the https://cloud.spring.io/spring-cloud-netflix/[Spring Cloud Netflix] portfolio:
+
+* It uses Eureka for Service Discovery: Eureka instances can be registered and clients can discover the instances using Spring-managed beans
+* It uses Hystrix as a service breaker: Hystrix clients can be built with a simple annotation-driven method decorator
+
+NOTE: This is just a demonstration of how one can use those projects. It should not by any means recommend this kind of microservice architecture for all use cases. Its a nice and easy way to demonstrate what you can do with additional Spring projects after finishing your Spring Boot application.
+
+The project `calendar-service` is a client of `event-service`. In addition there is now `service-registry`.
+
+`service-registry` declares an additional dependency management:
+
+.Bring in Spring Cloud dependencies
+====
+[source,xml]
+----
+<dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-dependencies</artifactId>
+			<version>${spring-cloud.version}</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
+	</dependencies>
+</dependencyManagement>
+
+<dependencies>
+	<dependency>
+		<groupId>org.springframework.cloud</groupId>
+		<artifactId>spring-cloud-starter-eureka-server</artifactId>
+	</dependency>
+</dependencies>
+----
+====
+
+And the application is annotated like this:
+
+.Provide an Eureka server:
+====
+[source,java]
+----
+@SpringBootApplication
+@EnableEurekaServer
+public class ServiceRegistryApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ServiceRegistryApplication.class, args);
+	}
+}
+----
+====
+
+Thus the Spring Boot application boots the Eureka instance. In addition it tries to register itself with other instances. As it's the only one, disable this:
+
+.Disable registration with other registry
+====
+[source,properties]
+----
+server.port = 8761
+
+eureka.client.register-with-eureka = false
+eureka.client.fetch-registry = false
+----
+====
+
+The listing above also sets Springs server port to Eurekas default. You build and run the service registry as usual. If you do this, you'll reach a admin interface at http://localhost:8761[http://localhost:8761].
+
+Then back to the event service. Add the same additional dependency management as well as `org.springframework.cloud:spring-cloud-starter-eureka-server`.
+
+Also, give the service a fixed name through configuration:
+
+.Fixed name for a Spring Boot application
+====
+[source,properties]
+----
+spring.application.name = event-service
+----
+====
+
+You'll now annotate the `EventServiceApplication` with `@EnableDiscoveryClient`
+
+.Register a service with the service registry
+====
+[source,properties]
+----
+@SpringBootApplication
+@EnableDiscoveryClient
+public class EventServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(EventServiceApplication.class, args);
+	}
+}
+----
+====
+
+`@EnableDiscoveryClient` enables discovery for Eureka instances by default, but there are also implementations for Zookeeper and other.
+
+Imagine the `event-service` as provider. The additional `calendar-service` in this repository is a client. The `calendar-service`  should retrieve all existing events and present them in a calendar widget. It's main application class shall also be annotated with `@EnableDiscoveryClient`.
+
+Both services are now registered with Eureka.
+
+We'll use Springs `RestTemplate` to synchronously `GET` `/api/events` from our event service, but we won't be hardcoding the server path and port of the event service. Instead, we'll provide a special instance of `RestTemplate` through the following configuration inside `calendar-service`:
+
+.Provide a load balanced RestTemplate
+====
+[source,java]
+----
+@Configuration
+public class RestTemplateConfig {
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+----
+====
+
+You see an ordinary configuration class that returns one bean. The method is annotated with `@LoadBalanced`. `@LoadBalanced` also comes with `spring-cloud-starter-eureka-server` and is part of Springs so called Ribbon client. Ribbon is a client side load balancer that knows the connection to the service discovery. If you use `@EnableDiscoveryClient` with your application and are ok with Ribbons default, you can use it immediately to make your `RestTemplate` aware of virtual host names. 
+
+Virtual host names are the names of the applications that are registered with the Eureka service registry instance.
+
+The only difference in using the template is the fact, that you have to provide the name of a virtual host instead of a server and port:
+
+.Using a load balanced RestTemplate
+====
+[source,java]
+----
+@Service
+public class EventService {
+    public List<Event> allEvents() {
+        final ResponseEntity<List<Event>> response =  this.restTemplate
+                .exchange("http://event-service/api/events", HttpMethod.GET, null, new ParameterizedTypeReference<List<Event>>() {
+                });
+        if(response.getStatusCode() != HttpStatus.OK) {
+            throw new RuntimeException("Could not retrieve events");
+        }
+        return response.getBody();
+    }
+}
+----
+====
+
+And that's all! As you see, we have wrapped the call inside a service to which we'll come back later.
+
+Using the service from with in a controller like this posses a problem though:
+
+.Using the service above
+====
+[source,java]
+----
+@Controller
+public class IndexController {
+    
+    private final EventService eventService;
+
+    public IndexController(EventService eventService) {
+        this.eventService = eventService;
+    }
+    
+    @GetMapping({"/", "index"})
+    public String index(final Model model) {
+        model.addAttribute("events", this.eventService.allEvents());
+        return "index";
+    }
+}
+----
+====
+
+The request against the controller depends on another request from server to server that can fail (and usually will fail some times).
+
+There are many different solutions for that topic. One is a technical solution called "circuit breaker", much like a fuse inside your house that opens when an error happens and depending on the fuse will close again, either manually or after some time, trying again.
+
+From the Netflix stack there's `org.springframework.cloud:spring-cloud-starter-hystrix` that provides `@HystrixCommand`. To use those circuit breakers inside your application, they have to be enabled like:
+
+.Enable circuit breaker
+====
+[source,java]
+----
+@SpringBootApplication
+@EnableCircuitBreaker
+public class CalendarServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CalendarServiceApplication.class, args);
+	}
+}
+----
+====
+
+And then it's easy to use them. In this case we're using the `fallbackMethod` attribute to define another method that is to be called when the original method fails for some reason:
+
+.Using a circuit breaker
+====
+[source,java]
+----
+@HystrixCommand(fallbackMethod = "emptyEvents")
+public List<Event> allEvents() {
+    // As above make call to remote server
+    return response.getBody();
+}
+
+List<Event> emptyEvents() {
+    return new ArrayList<>();
+}
+----
+====
+
+Depending on other settings, Hystrix will keep the circuit open for some time, than close and try again.
+
+NOTE: Take care in a production system to adapt Hystrix timeouts to Ribbon clients timeouts.
+
+That may works when a service depends on one remote call, but having different calls, it gets hard very fast to manage. A better solution for that may be architectures that invert the relation ship: Whereas we'll keep the events as a resource, that resources is polled in some sane interval and events are stored redundant in the calendar service. 
+
+Changes from the calendar service to events can be communicated maybe through an event bus.
+
+== Wrap up
+
+We have managed to setup one of many possible micro service architectures in about 4 hours. 
+
+You can run them independent now each as explained in the beginning and than hit http://localhost:8088 for the calendar service or use the provided docker images as follows (given a valid Docker installation on your machine)
+
+Build everything with either `build.sh` or `build.bat`. That will use https://github.com/fabric8io/docker-maven-plugin[Docker Maven Plugin] to provide three images:
+
+* msimons/ws-cluj-calendar-service
+* msimons/ws-cluj-event-service   
+* msimons/ws-cluj-service-registry
+
+Which are orchestrated via the following `docker-compose.yml`
+
+.Orchestrate docker images via docker-compose
+====
+[source,yml]
+----
+include::docker-compose.yml[]
+----
+====
+
+Notice how some properties of your applications in the containers can easily changed through dockers environment setting. For example we have to configure Eurekas default zone now with `eureka.client.serviceUrl.defaultZone` as Eureka doesn't run on the same host anymore.
+
+Run everything now with `docker-compose up` and the calendar service is reachable as a frontend for the whole system under http://localhost:8080.

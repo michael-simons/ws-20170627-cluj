@@ -426,7 +426,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <span id="author" class="author">Michael Simons</span><br>
 <span id="email" class="email"><a href="mailto:michael@simons.ac">michael@simons.ac</a></span><br>
 <span id="revnumber">version 1.0,</span>
-<span id="revdate">2017-06-21 12:58:51 CEST</span>
+<span id="revdate">2017-06-30 16:50:00 CEST</span>
 </div>
 </div>
 <div id="content">
@@ -486,6 +486,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#_non_functional_requirements">7. Non functional requirements</a></li>
+<li><a href="#_microservice_scenario">8. Microservice Scenario</a></li>
+<li><a href="#_wrap_up">9. Wrap up</a></li>
 </ul>
 </div>
 </div>
@@ -648,7 +650,7 @@ In this part you&#8217;ll learn about the different ways to bootstrap a Spring B
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Goto <a href="https://start.spring.io" class="bare">https://start.spring.io</a>, chose wether you want to use Maven or Gradle, the language (in this workshop we&#8217;ll use Java) and the version of Spring Boot (leave as is).</p>
+<p>Go to <a href="https://start.spring.io" class="bare">https://start.spring.io</a>, chose wether you want to use Maven or Gradle, the language (in this workshop we&#8217;ll use Java) and the version of Spring Boot (leave as is).</p>
 </li>
 <li>
 <p>Enter "Web" inside dependencies textbox and select "Web"</p>
@@ -1003,7 +1005,7 @@ public @interface SpringBootApplication{}</code></pre>
 <div class="ulist">
 <ul>
 <li>
-<p>Don&#8217;t annotate a class in the root package with <code>@SproingBootApplication</code> or <code>@ComponentScan</code>. It will scan the whole class path!</p>
+<p>Don&#8217;t annotate a class in the root package with <code>@SpringBootApplication</code> or <code>@ComponentScan</code>. It will scan the whole class path!</p>
 </li>
 <li>
 <p>Those annotation won&#8217;t scan packages in parallel to their current package</p>
@@ -1081,7 +1083,7 @@ public class EventServiceApplicationTests {
 </ul>
 </div>
 <div class="paragraph">
-<p>It&#8217;s not as elaborate like JRebel, but a valuable nevertheless!</p>
+<p>It’s not as elaborate like JRebel, but, nevertheless, valuable!</p>
 </div>
 </div>
 <div class="sect2">
@@ -1283,11 +1285,10 @@ public void getEventsShouldWork() throws Exception {
 <div class="content">
 <div class="listingblock">
 <div class="content">
-<pre>[source,java]
-@GetMapping("/api/events")
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@GetMapping("/api/events")
 public List&lt;EventEntity&gt; getEvents() {
     return new ArrayList&lt;&gt;();
-}</pre>
+}</code></pre>
 </div>
 </div>
 </div>
@@ -1870,11 +1871,389 @@ management.context-path = /application</code></pre>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_microservice_scenario"><a class="anchor" href="#_microservice_scenario"></a>8. Microservice Scenario</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The sources contain one microservice scenario which makes use of two projects from the <a href="https://cloud.spring.io/spring-cloud-netflix/">Spring Cloud Netflix</a> portfolio:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>It uses Eureka for Service Discovery: Eureka instances can be registered and clients can discover the instances using Spring-managed beans</p>
+</li>
+<li>
+<p>It uses Hystrix as a service breaker: Hystrix clients can be built with a simple annotation-driven method decorator</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This is just a demonstration of how one can use those projects. It should not by any means recommend this kind of microservice architecture for all use cases. Its a nice and easy way to demonstrate what you can do with additional Spring projects after finishing your Spring Boot application.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The project <code>calendar-service</code> is a client of <code>event-service</code>. In addition there is now <code>service-registry</code>.</p>
+</div>
+<div class="paragraph">
+<p><code>service-registry</code> declares an additional dependency management:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 31. Bring in Spring Cloud dependencies</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-xml" data-lang="xml">&lt;dependencyManagement&gt;
+	&lt;dependencies&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-dependencies&lt;/artifactId&gt;
+			&lt;version&gt;${spring-cloud.version}&lt;/version&gt;
+			&lt;type&gt;pom&lt;/type&gt;
+			&lt;scope&gt;import&lt;/scope&gt;
+		&lt;/dependency&gt;
+	&lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;
+
+&lt;dependencies&gt;
+	&lt;dependency&gt;
+		&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+		&lt;artifactId&gt;spring-cloud-starter-eureka-server&lt;/artifactId&gt;
+	&lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>And the application is annotated like this:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 32. Provide an Eureka server:</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@SpringBootApplication
+@EnableEurekaServer
+public class ServiceRegistryApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ServiceRegistryApplication.class, args);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Thus the Spring Boot application boots the Eureka instance. In addition it tries to register itself with other instances. As it&#8217;s the only one, disable this:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 33. Disable registration with other registry</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-properties" data-lang="properties">server.port = 8761
+
+eureka.client.register-with-eureka = false
+eureka.client.fetch-registry = false</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The listing above also sets Springs server port to Eurekas default. You build and run the service registry as usual. If you do this, you&#8217;ll reach a admin interface at <a href="http://localhost:8761">http://localhost:8761</a>.</p>
+</div>
+<div class="paragraph">
+<p>Then back to the event service. Add the same additional dependency management as well as <code>org.springframework.cloud:spring-cloud-starter-eureka-server</code>.</p>
+</div>
+<div class="paragraph">
+<p>Also, give the service a fixed name through configuration:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 34. Fixed name for a Spring Boot application</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-properties" data-lang="properties">spring.application.name = event-service</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You&#8217;ll now annotate the <code>EventServiceApplication</code> with <code>@EnableDiscoveryClient</code></p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 35. Register a service with the service registry</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-properties" data-lang="properties">@SpringBootApplication
+@EnableDiscoveryClient
+public class EventServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(EventServiceApplication.class, args);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p><code>@EnableDiscoveryClient</code> enables discovery for Eureka instances by default, but there are also implementations for Zookeeper and other.</p>
+</div>
+<div class="paragraph">
+<p>Imagine the <code>event-service</code> as provider. The additional <code>calendar-service</code> in this repository is a client. The <code>calendar-service</code>  should retrieve all existing events and present them in a calendar widget. It&#8217;s main application class shall also be annotated with <code>@EnableDiscoveryClient</code>.</p>
+</div>
+<div class="paragraph">
+<p>Both services are now registered with Eureka.</p>
+</div>
+<div class="paragraph">
+<p>We&#8217;ll use Springs <code>RestTemplate</code> to synchronously <code>GET</code> <code>/api/events</code> from our event service, but we won&#8217;t be hardcoding the server path and port of the event service. Instead, we&#8217;ll provide a special instance of <code>RestTemplate</code> through the following configuration inside <code>calendar-service</code>:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 36. Provide a load balanced RestTemplate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Configuration
+public class RestTemplateConfig {
+
+    @LoadBalanced
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>You see an ordinary configuration class that returns one bean. The method is annotated with <code>@LoadBalanced</code>. <code>@LoadBalanced</code> also comes with <code>spring-cloud-starter-eureka-server</code> and is part of Springs so called Ribbon client. Ribbon is a client side load balancer that knows the connection to the service discovery. If you use <code>@EnableDiscoveryClient</code> with your application and are ok with Ribbons default, you can use it immediately to make your <code>RestTemplate</code> aware of virtual host names.</p>
+</div>
+<div class="paragraph">
+<p>Virtual host names are the names of the applications that are registered with the Eureka service registry instance.</p>
+</div>
+<div class="paragraph">
+<p>The only difference in using the template is the fact, that you have to provide the name of a virtual host instead of a server and port:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 37. Using a load balanced RestTemplate</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Service
+public class EventService {
+    public List&lt;Event&gt; allEvents() {
+        final ResponseEntity&lt;List&lt;Event&gt;&gt; response =  this.restTemplate
+                .exchange("http://event-service/api/events", HttpMethod.GET, null, new ParameterizedTypeReference&lt;List&lt;Event&gt;&gt;() {
+                });
+        if(response.getStatusCode() != HttpStatus.OK) {
+            throw new RuntimeException("Could not retrieve events");
+        }
+        return response.getBody();
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>And that&#8217;s all! As you see, we have wrapped the call inside a service to which we&#8217;ll come back later.</p>
+</div>
+<div class="paragraph">
+<p>Using the service from with in a controller like this posses a problem though:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 38. Using the service above</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@Controller
+public class IndexController {
+
+    private final EventService eventService;
+
+    public IndexController(EventService eventService) {
+        this.eventService = eventService;
+    }
+
+    @GetMapping({"/", "index"})
+    public String index(final Model model) {
+        model.addAttribute("events", this.eventService.allEvents());
+        return "index";
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>The request against the controller depends on another request from server to server that can fail (and usually will fail some times).</p>
+</div>
+<div class="paragraph">
+<p>There are many different solutions for that topic. One is a technical solution called "circuit breaker", much like a fuse inside your house that opens when an error happens and depending on the fuse will close again, either manually or after some time, trying again.</p>
+</div>
+<div class="paragraph">
+<p>From the Netflix stack there&#8217;s <code>org.springframework.cloud:spring-cloud-starter-hystrix</code> that provides <code>@HystrixCommand</code>. To use those circuit breakers inside your application, they have to be enabled like:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 39. Enable circuit breaker</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@SpringBootApplication
+@EnableCircuitBreaker
+public class CalendarServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CalendarServiceApplication.class, args);
+	}
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>And then it&#8217;s easy to use them. In this case we&#8217;re using the <code>fallbackMethod</code> attribute to define another method that is to be called when the original method fails for some reason:</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 40. Using a circuit breaker</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-java" data-lang="java">@HystrixCommand(fallbackMethod = "emptyEvents")
+public List&lt;Event&gt; allEvents() {
+    // As above make call to remote server
+    return response.getBody();
+}
+
+List&lt;Event&gt; emptyEvents() {
+    return new ArrayList&lt;&gt;();
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Depending on other settings, Hystrix will keep the circuit open for some time, than close and try again.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Take care in a production system to adapt Hystrix timeouts to Ribbon clients timeouts.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>That may works when a service depends on one remote call, but having different calls, it gets hard very fast to manage. A better solution for that may be architectures that invert the relation ship: Whereas we&#8217;ll keep the events as a resource, that resources is polled in some sane interval and events are stored redundant in the calendar service.</p>
+</div>
+<div class="paragraph">
+<p>Changes from the calendar service to events can be communicated maybe through an event bus.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_wrap_up"><a class="anchor" href="#_wrap_up"></a>9. Wrap up</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>We have managed to setup one of many possible micro service architectures in about 4 hours.</p>
+</div>
+<div class="paragraph">
+<p>You can run them independent now each as explained in the beginning and than hit <a href="http://localhost:8088" class="bare">http://localhost:8088</a> for the calendar service or use the provided docker images as follows (given a valid Docker installation on your machine)</p>
+</div>
+<div class="paragraph">
+<p>Build everything with either <code>build.sh</code> or <code>build.bat</code>. That will use <a href="https://github.com/fabric8io/docker-maven-plugin">Docker Maven Plugin</a> to provide three images:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>msimons/ws-cluj-calendar-service</p>
+</li>
+<li>
+<p>msimons/ws-cluj-event-service</p>
+</li>
+<li>
+<p>msimons/ws-cluj-service-registry</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Which are orchestrated via the following <code>docker-compose.yml</code></p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 41. Orchestrate docker images via docker-compose</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="prettyprint highlight"><code class="language-yml" data-lang="yml">version: '2'
+
+services:
+  calendar-service:
+    image: msimons/ws-cluj-calendar-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-registry
+      - event-service
+    environment:
+      - server.port=8080
+      - eureka.client.serviceUrl.defaultZone=http://service-registry:8761/eureka/
+
+  event-service:
+    image: msimons/ws-cluj-event-service
+    depends_on:
+      - service-registry
+      - database
+    environment:
+      - server.port=8080
+      - spring.profiles.active=prod
+      - spring.datasource.url=jdbc:postgresql://database:5432/events-db
+      - eureka.client.serviceUrl.defaultZone=http://service-registry:8761/eureka/
+    expose:
+      - "8080"
+
+  service-registry:
+    image: msimons/ws-cluj-service-registry
+    expose:
+     - "8761"
+
+  database:
+      image: postgres:9.6
+      environment:
+          - POSTGRES_USER=events-db
+          - POSTGRESS_PASSWORD=events-db</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice how some properties of your applications in the containers can easily changed through dockers environment setting. For example we have to configure Eurekas default zone now with <code>eureka.client.serviceUrl.defaultZone</code> as Eureka doesn&#8217;t run on the same host anymore.</p>
+</div>
+<div class="paragraph">
+<p>Run everything now with <code>docker-compose up</code> and the calendar service is reachable as a frontend for the whole system under <a href="http://localhost:8080" class="bare">http://localhost:8080</a>.</p>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 1.0<br>
-Last updated 2017-06-21 12:58:51 CEST
+Last updated 2017-06-30 16:50:00 CEST
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
